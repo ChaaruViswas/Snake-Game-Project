@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Snake Game by Chaaru Viswas S</title>
+  <meta charset="UTF-8">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+  
+    #gameArea {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  
+    canvas {
+      border: 1px solid white;
+      background-color: black;
+    }
+  
+    #score {
+      font-size: 1.5em;
+      margin-top: 20px;
+      color: black;
+    }
+  
+    #targetScore {
+      font-size: 1.5em;
+      margin-top: 10px;
+      color: black;
+    }
+  
+    #gameOver {
+      display: none;
+      font-size: 2em;
+      text-align: center;
+      margin-top: 20px;
+      color: black;
+    }
+  
+    #resetButton {
+      display: none;
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 1.2em;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  
+    #resetButton:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+<div id="gameArea">
+  <canvas width="400" height="400" id="game"></canvas>
+  <div id="score">Score: 0</div>
+  <div id="targetScore">Target Score: <span id="targetScoreValue">20</span></div>
+  <div id="gameOver">Game Over!</div>
+  <div>
+    <input type="number" id="setTargetScore" placeholder="Set Target Score">
+    <button id="changeTargetScore" onclick="startGame()">Set Target Score</button>
+  </div>
+  <button id="resetButton" onclick="resetGame()">Play Again</button>
+</div>
+
+<script>
+  var canvas = document.getElementById('game');
+  var context = canvas.getContext('2d');
+  var grid = 16;
+  var count = 0;
+  var score = 0;
+  var targetScore = 20;
+  var gameRunning = false;
+
+  var snake = {
+    x: 160,
+    y: 160,
+    dx: grid,
+    dy: 0,
+    cells: [],
+    maxCells: 4
+  };
+
+  var egg = {
+    x: 320,
+    y: 320
+  };
+
+  function getRandomInt(min,max)
+  {
+    return Math.floor(Math.random() * (max - min)) + min;
+  }
+
+  function loop()
+  {
+    if (!gameRunning) return;
+
+    requestAnimationFrame(loop);
+
+    if (++count<4)
+    {
+      return;
+    }
+
+    count = 0;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    snake.x += snake.dx;
+    snake.y += snake.dy;
+    if (snake.x < 0 || snake.x >= canvas.width || snake.y < 0 || snake.y >= canvas.height)
+    {
+      gameRunning = false;
+      displayGameOver();
+      return;
+    }
+    snake.cells.unshift({x: snake.x, y: snake.y});
+
+    if (snake.cells.length > snake.maxCells)
+    {
+      snake.cells.pop();
+    }
+    context.fillStyle = 'red';
+    context.fillRect(egg.x, egg.y, grid - 1, grid - 1);
+    context.fillStyle = 'green';
+    snake.cells.forEach(function (cell, index) {
+      context.fillRect(cell.x, cell.y, grid - 1, grid - 1);
+      if (cell.x === egg.x && cell.y === egg.y)
+      {
+        snake.maxCells++;
+        score += 1;
+        document.getElementById('score').textContent = 'Score: ' + score;
+        if (score >= targetScore)
+        {
+          gameRunning = false;
+          document.getElementById('score').textContent = 'You Won!';
+        } else {
+          egg.x = getRandomInt(0, 25) * grid;
+          egg.y = getRandomInt(0, 25) * grid;
+        }
+      }
+      for (var i = index + 1; i < snake.cells.length; i++)
+      {
+        if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y)
+        {
+          gameRunning = false;
+          displayGameOver();
+          return;
+        }
+      }
+    });
+  }
+
+  function startGame()
+  {
+    if (!gameRunning)
+    {
+      var newTargetScore = parseInt(document.getElementById('setTargetScore').value);
+      if (!isNaN(newTargetScore))
+      {
+        targetScore = newTargetScore;
+        document.getElementById('targetScoreValue').textContent = targetScore;
+        document.getElementById('setTargetScore').value = '';
+        resetGame();
+        gameRunning = true;
+        requestAnimationFrame(loop);
+      }
+    }
+  }
+
+  function resetGame()
+  {
+    snake.x = 160;
+    snake.y = 160;
+    snake.cells = [];
+    snake.maxCells = 4;
+    snake.dx = grid;
+    snake.dy = 0;
+    egg.x = getRandomInt(0, 25) * grid;
+    egg.y = getRandomInt(0, 25) * grid;
+    score = 0;
+    document.getElementById('score').textContent = 'Score: ' + score;
+    gameRunning = true;
+    document.getElementById('gameOver').style.display = 'none';
+    document.getElementById('resetButton').style.display = 'none';
+  }
+
+  function displayGameOver()
+  {
+    document.getElementById('gameOver').style.display = 'block';
+    document.getElementById('resetButton').style.display = 'block';
+  }
+
+  document.addEventListener('keydown', function (e)
+  {
+    if (!gameRunning) return;
+    if (e.which === 37 && snake.dx === 0)
+    {
+      snake.dx = -grid;
+      snake.dy = 0;
+    } 
+    else if (e.which === 38 && snake.dy === 0)
+    {
+      snake.dy = -grid;
+      snake.dx = 0;
+    } 
+    else if (e.which === 39 && snake.dx === 0)
+    {
+      snake.dx = grid;
+      snake.dy = 0;
+    } 
+    else if (e.which === 40 && snake.dy === 0)
+    {
+      snake.dy = grid;
+      snake.dx = 0;
+    }
+  });
+</script>
+</body>
+</html>
